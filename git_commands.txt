@@ -1,0 +1,63 @@
+git commands
+===============
+
+## Viewing previous commits
+git log -- oneline
+# change number of displayed lines
+git log -- oneline -n 3 
+
+
+## Switching between branches
+git branch
+# adding branch to repo
+git branch -t try-backbone origin/try-backbone
+# see try-backbone files
+git checkout try-backbone
+
+
+## Making changes
+# Look at whether there are changes made
+git status
+# see what the change is 
+git diff
+
+
+## Committing changes
+git branch [branch-name]
+git checkout [branch-name]
+git add [name-of-the-file-changed]
+git status
+
+git commit -m "add a comment"
+git status
+git log
+
+
+## Merging branches
+git checkout branchA
+git merge branchB
+
+
+## Making a repo
+cd ..
+mkdir hello
+cd hello
+git init
+git add [filename]
+git commit -m "initial commit"
+
+
+## Getting changes from server
+git pull
+# is the same as...
+git fetch
+git merge
+
+
+## Pushing changes to the server
+git remote add origin [url-of-git-repo-online]
+git push -u origin master
+git add [filename]
+git commit -m "describe change"
+git push
+
