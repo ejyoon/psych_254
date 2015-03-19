@@ -19,7 +19,6 @@ I've adapted this for psych 254 purposes
 First install and load the package.
 
 ```{r}
-install.packages("ggplot2")
 library(ggplot2)
 ```
 
@@ -224,13 +223,14 @@ ds_byCond <- ds %>%
   summarise(
     mean = mean(rt, na.rm = TRUE)
     ) %>%
+  spread(congruent, mean) %>%
+  mutate(diff = no - yes)
   
-
 ds_means <- ds_byCond %>%
-  group_by(presentation.time, congruent) %>%
+  group_by(presentation.time) %>%
   summarise(
-    mean = mean(mean, na.rm = TRUE),
-    sem = sem(na.omit(mean))
+    mean = mean(diff, na.rm = TRUE),
+    sem = sem(na.omit(diff))
     )
 ```
 
@@ -238,13 +238,13 @@ Now plot this summary, giving more or less the bar plot that Sklar et al. gave (
 
 ```{r}
 means.barplot <- qplot(x=presentation.time, y=mean, fill=presentation.time,
-                       data=ds_byCond, geom="bar", stat="identity",
+                       data=ds_means, geom="bar", stat="identity",
                        position="dodge") +
   geom_errorbar(aes(ymax=mean+sem,
                     ymin=mean-sem),
-                    position=position_dodge(),
-                    data=ds_byCond)
-means.barplot
+                    position=position_dodge()
+                    ) 
+means.barplot # why does 1700 look different?
 ```
 
 What do you see here? How close is it to what Sklar et al. report? Do the error bars match? How do you interpret these data? 
@@ -260,10 +260,34 @@ Your own analysis
 Show us what you would do with these data, operating from first principles. What's the fairest plot showing a test of Sklar et al.'s original hypothesis that people can do arithmetic "non-consciously"?
 
 ```{r}
-
+ds_byCond <- ds %>%
+  group_by(subid, operand, presentation.time, congruent) %>%
+  summarise(
+    mean = mean(rt, na.rm = TRUE)
+    ) %>%
+  spread(congruent, mean) %>%
+  mutate(diff = no - yes)
+  
+ds_means <- ds_byCond %>%
+  group_by(operand, presentation.time) %>%
+  summarise(
+    mean = mean(diff, na.rm = TRUE),
+    sem = sem(na.omit(diff))
+    )
+means.barplot <- qplot(x=presentation.time, y=mean, fill=presentation.time,
+                       data=ds_means, geom="bar", stat="identity",
+                       position="dodge") +
+  geom_errorbar(aes(ymax=mean+sem,
+                    ymin=mean-sem),
+                    position=position_dodge()
+                    ) +
+  facet_wrap(~operand)
+means.barplot
 ```
 
 Challenge problem: Do you find any statistical support for Sklar et al.'s findings?
 
 ```{r}
+library(lme4)
+lmer <- lmer(diff~presentation.time * operand + (1|subid), data=ds_byCond) # no interaction
 ```

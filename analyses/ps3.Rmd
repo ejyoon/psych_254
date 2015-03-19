@@ -1,6 +1,6 @@
 ---
 title: 'Psych 254 W15 PS #3'
-author: "Mike Frank"
+author: "Mike Frank, Erica Yoon"
 date: "February 22, 2015"
 output: html_document
 ---
@@ -20,11 +20,14 @@ Let's start by convincing ourselves that t-tests have the appropriate false posi
 First do this using a `for` loop.
 
 ```{r}
+
 ```
 
 Next, do this using the `replicate` function:
 
 ```{r}
+ttest = replicate(10000,t.test(rnorm(30),rnorm(30))$p.value)
+sum(ttest < .05) / sum(ttest)
 ```
 
 Ok, that was a bit boring. Let's try something moderately more interesting - let's implement a p-value sniffing simulation, in the style of Simons, Nelson, & Simonsohn (2011).
@@ -35,12 +38,24 @@ First, write a function that implements this sampling regime.
 
 ```{r}
 double.sample <- function () {
+  success <- FALSE
+  result <- "NA"
+  x <- 30
+  while (!success) {
+  p.value = t.test(rnorm(x),rnorm(x))$p.value 
+  ifelse(p.value < .05, result <- "false_positive", ifelse(p.value > .25, result <- "true_negative", success <- FALSE))
+  ifelse(result != "NA", success <- TRUE, x <- x*2)
+}
+return(result)
 }
 ```
 
 Now call this function 10k times and find out what happens. 
 
 ```{r}
+double.sample.repeat <- replicate(10000, double.sample())
+sum(double.sample.repeat == "false_positive") / (sum(double.sample.repeat == "false_positive") + sum(double.sample.repeat == "true_negative"))
+# 
 ```
 
 Is there an inflation of false positives? How bad is it?
@@ -52,6 +67,22 @@ HINT: Try to do this by making the function `double.sample` take the upper p val
 HINT 2: You may need more samples. Find out by looking at how the results change from run to run.
 
 ```{r}
+# double the sample when .05 < p < .50
+double.sample <- function () {
+  success <- FALSE
+  result <- "NA"
+  x <- 30
+  while (!success) {
+  p.value = t.test(rnorm(x),rnorm(x))$p.value 
+  ifelse(p.value < .05, result <- "false_positive", ifelse(p.value > .50, result <- "true_negative", success <- FALSE))
+  ifelse(result != "NA", success <- TRUE, x <- x*2)
+}
+return(result)
+}
+
+double.sample.repeat <- replicate(10000, double.sample())
+sum(double.sample.repeat == "false_positive") / (sum(double.sample.repeat == "false_positive") + sum(double.sample.repeat == "true_negative"))
+# false positive inflated to .0924
 ```
 
 What do you conclude on the basis of this simulation? How bad is this kind of data-dependent policy?
@@ -69,6 +100,8 @@ and vitamin C. This is super simple. (Try `?ToothGrowth`).
 First plot the data, we'll use `qplot` to understand how `len` (tooth length) depends on `dose` (amount of Vitamin C) and `supp` (delivery method).
 
 ```{r}
+library(ggplot2)
+qplot(data = ToothGrowth, y = len, x = dose, facets = ~supp)
 ```
 
 So now you see what's going on. 
@@ -76,16 +109,23 @@ So now you see what's going on.
 Next, always make a histogram of the DV before making a linear model! This reveals the distribution and can be helpful in choosing your model type.
 
 ```{r}
+qplot(data=ToothGrowth, x=len, geom="histogram")
 ```
 
 Now make a linear model of tooth lengths using `lm`. Try making one with main effects and interactions and another with just main  effects. Make sure to assign them to variables so that you can get them later.
 
 ```{r}
+lm1 <- lm(len~dose+supp, data=ToothGrowth)
+summary(lm1)
+lm2 <- lm(len~dose*supp, data=ToothGrowth)
+summary(lm2)
 ```
 
 Now try taking out the intercept, using a -1 term in the formula. what does this do?
 
 ```{r}
+lm3 <- lm(len~dose*supp-1, data=ToothGrowth)
+summary(lm3)
 ```
 
 Thought question: Take a moment to interpret the coefficients of the model. 
@@ -101,12 +141,26 @@ HINT: use the `predict` function ...
 HINT 2: you will have to make a dataframe to do the prediction with, so use something like `data.frame(dose=...)`.
 
 ```{r}
+predict(lm2, newdata=data.frame(dose=0, supp="OJ")) # predicted len = 11.55
+predict(lm2, newdata=data.frame(dose=0, supp="VC")) # predicted len = 3.295
+
+predict(lm2, newdata=data.frame(dose=1.5, supp="OJ")) # predicted len = 23.27
+predict(lm2, newdata=data.frame(dose=1.5, supp="VC")) # predicted len = 20.87
+
+predict(lm2, newdata=data.frame(dose=2.5, supp="OJ")) # predicted len = 31.08
+predict(lm2, newdata=data.frame(dose=2.5, supp="VC")) # predicted len = 32.58
+
+predict(lm2, newdata=data.frame(dose=10, supp="OJ")) # predicted len = 89.66
+predict(lm2, newdata=data.frame(dose=10, supp="VC")) # predicted len = 120.45
 ```
 
 Now plot the residuals from the original model. How do they look?
 HINT: `?resid`
 
 ```{r}
+lm.res <- resid(lm2)
+
+plot(ToothGrowth$len, lm.res, ylab="Residuals", xlab="Length of Teeth") 
 ```
 
 
@@ -115,6 +169,7 @@ BONUS: test them for normality of distribution using a quantile-quantile plot.
 HINT: `?qqplot` and `?qqnorm`
 
 ```{r}
+qqnorm(ToothGrowth$len);qqline(ToothGrowth$len, col = 2)
 ```
 
 
@@ -127,7 +182,12 @@ Try to figure out what the most reasonable linear model of the data is.
 
 ```{r}
 d <- read.csv("../data/FVS2011-hands.csv")
+head(d)
+qplot(data=d, x=hand.look, geom="histogram")
+qplot(data=d, y=hand.look, x=age, facets=~condition)
 
+d.lm <- lm(hand.look~age, data=d)
+summary(d.lm)
 ```
 
 Plot that model on the same plot as the data.
@@ -135,6 +195,7 @@ Plot that model on the same plot as the data.
 HINT: you can do this either using `predict` or (if you are feeling confident of your understanding of the models) using the built-in linear models in `ggplot`'s `geom_smooth`. 
 
 ```{r}
+qplot(data=d, y=hand.look, x=age, facets=~condition) + geom_smooth(method=lm)
 ```
 
 What do you conclude from this pattern of data?
