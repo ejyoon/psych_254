@@ -61,19 +61,19 @@ The basic unit of a ggplot plot is a "geom" - a mapping between data (via an "ae
 
 Let's try some other geoms and manipulate their parameters. First, try a histogram (`geom="hist"`). 
 
-```{r}
+```{r warning=FALSE}
 qplot(carat, geom="histogram", data = diamonds)
 ```
 
 Now facet your histogram by clarity and cut. 
 
-```{r}
+```{r warning=FALSE}
 qplot(carat, geom="histogram", facets = clarity ~ cut, data = diamonds)
 ```
 
 I like a slightly cleaner look to my plots. Luckily, ggplot allows you to add "themes" to your plots. Try doing the same plot but adding `+ theme_bw()` or `+ theme_classic()`. Different themes work better for different applications, in my experience. 
 
-```{r}
+```{r warning=FALSE}
 qplot(carat, geom="histogram", facets = clarity ~ cut, data = diamonds) +
   theme_classic()
 ```
